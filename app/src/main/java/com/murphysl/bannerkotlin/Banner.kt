@@ -10,9 +10,12 @@ import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.RelativeLayout
 import android.widget.TextView
 import com.squareup.picasso.Picasso
+import org.jetbrains.anko.margin
+import org.jetbrains.anko.padding
 import java.util.*
 
 /**
@@ -26,15 +29,17 @@ class Banner : RelativeLayout {
 
     private var textSize : Float? = null
     private var textColor : Int? = null
-    private var indicator : Int? = null
+    private var indicatorNum: Int? = null
     private var scrollFlag : Boolean? = null
 
     private var viewPager : ViewPager? = null
     private var textView : TextView? = null
+    private lateinit var indicator : LinearLayout
 
     private var titles : MutableList<String> = ArrayList()
     private var imgs : MutableList<String> = ArrayList()
     private var pics : MutableList<ImageView> = ArrayList()
+    private var indicators : MutableList<ImageView> = ArrayList()
 
     private var currentPage : Int = 1
 
@@ -43,10 +48,7 @@ class Banner : RelativeLayout {
     constructor(context : Context , attributeSet: AttributeSet?) : this(context , attributeSet , 0){}
 
     constructor(context: Context , attributeSet: AttributeSet? , defStyleAttr: Int)
-            : this(context , attributeSet , defStyleAttr , 0){
-
-
-    }
+            : this(context , attributeSet , defStyleAttr , 0){}
 
     constructor(context: Context , attributeSet: AttributeSet? , defStyleAttr: Int , defStyleRes : Int)
             :super(context , attributeSet , defStyleAttr , defStyleRes){
@@ -58,11 +60,21 @@ class Banner : RelativeLayout {
         lvp.addRule(CENTER_IN_PARENT)
         addView(viewPager , lvp)
 
+        indicator = LinearLayout(context)
+        indicator.orientation = LinearLayout.HORIZONTAL
+        indicator.id = View.generateViewId()
+        val ll = LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT , ViewGroup.LayoutParams.WRAP_CONTENT)
+        ll.addRule(ALIGN_PARENT_BOTTOM)
+        ll.addRule(CENTER_HORIZONTAL)
+        ll.bottomMargin = 20
+        addView(indicator , ll)
+
         textView = TextView(context)
         textView?.setText("text")
         textView?.setTextSize(24.0F)
-        val ltv = LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT , 40)
-        ltv.addRule(ALIGN_PARENT_BOTTOM)
+        val ltv = LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT , ViewGroup.LayoutParams.WRAP_CONTENT)
+        ltv.addRule(ABOVE , indicator.id)
+        ltv.bottomMargin = 20
         ltv.addRule(CENTER_HORIZONTAL)
         addView(textView , ltv)
 
@@ -70,22 +82,49 @@ class Banner : RelativeLayout {
 
     private fun initImageViews() {
         for(i:Int in 0..imgs.size-1){
-            Log.i("123" , "1")
             var imageView : ImageView = ImageView(context)
             var params : RelativeLayout.LayoutParams = RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT)
             params.addRule(CENTER_IN_PARENT)
             Picasso.with(context)
                     .load(imgs.get(i))
+                    .fit()
                     .into(imageView)
             pics.add(imageView)
         }
+
+        initIndicator()
     }
 
     fun start(){
-        Log.i("123" , "$imgs.size")
         initImageViews()
+        initTextViews()
         initViewPager()
+    }
+
+    private fun initTextViews() {
+        textView
+    }
+
+    private fun initIndicator() {
+        var num : Int = imgs.size -2
+        Log.i("123" , num.toString())
+        for(i : Int in 0..num){
+            var imageView : ImageView = ImageView(context)
+            imageView.scaleType = ImageView.ScaleType.CENTER_INSIDE
+            imageView.padding = 10
+            if(i == 0)
+                imageView.background = resources.getDrawable(R.drawable.indicator_select)
+            else
+                imageView.background = resources.getDrawable(R.drawable.indicator_unselect)
+
+            var lp : LinearLayout.LayoutParams = LinearLayout.LayoutParams(30 , 30)
+            lp.margin = 10
+
+            indicators.add(imageView)
+
+            indicator.addView(imageView, lp)
+        }
     }
 
 
@@ -93,7 +132,7 @@ class Banner : RelativeLayout {
         val ta : TypedArray = context.obtainStyledAttributes(attributeSet , R.styleable.Banner)
         textSize = ta.getFloat(R.styleable.Banner_titleSize , 0F)
         textColor = ta.getColor(R.styleable.Banner_titleColor , R.color.colorWhite)
-        indicator = ta.getResourceId(R.styleable.Banner_indicatorFormat , 0)
+        indicatorNum = ta.getResourceId(R.styleable.Banner_indicatorFormat , 0)
         scrollFlag = ta.getBoolean(R.styleable.Banner_scroll , true)
 
         ta.recycle()
@@ -141,10 +180,14 @@ class Banner : RelativeLayout {
             }
 
         }
+
         viewPager?.currentItem = currentPage
         viewPager?.addOnPageChangeListener(  object : ViewPager.OnPageChangeListener{
             override fun onPageScrollStateChanged(state: Int) {
-                viewPager!!.currentItem = currentPage
+                if(state == ViewPager.SCROLL_STATE_IDLE)
+                    viewPager?.setCurrentItem(currentPage , false)//去除动画效果
+
+                textView?.setText(titles.get(currentPage))
             }
 
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {

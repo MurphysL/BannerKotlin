@@ -28,9 +28,9 @@ class MainActivity : AppCompatActivity(){
                 "http://oh1zr9i3e.bkt.clouddn.com/public/16-11-26/87347346.jpg"
         )
         val titles : List<String> = listOf<String>(
-                "1",
-                "2",
-                "3"
+                "1111111111111111111111111111",
+                "222222222222222222222222222",
+                "333333333333333333333333333"
         )
         banner.setTitles(titles)
         banner.setImgsByUrl(imgs)
